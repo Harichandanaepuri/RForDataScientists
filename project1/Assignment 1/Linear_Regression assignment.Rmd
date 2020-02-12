@@ -1,0 +1,427 @@
+---
+title: "Calfornia Housing dataset - Linear regression"
+team: Harichandana Epuri (hxe170000), Akhila kancharana (axk180025)
+output:
+  word_document: default
+  html_notebook: default
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+## loading the California Housing Dataset
+
+```{r}
+california_data <- read.csv("https://utdallas.edu/~axk180025/CaliforniaHousingPrice/housing.csv")
+```
+## Dimensions of the dataset
+
+```{r}
+dim(california_data)
+
+```
+
+## Columns in the dataset
+
+```{r}
+colnames(california_data)
+```
+
+## Structure of the dataset
+
+```{r}
+str(california_data)
+```
+
+## Summary of the dataset
+
+```{r}
+summary(california_data)
+```
+
+## Data preprocessing
+## Finding the NA values in the dataset in each column
+
+```{r}
+NA_count_of_each_col<-sapply(california_data,function(x) sum(is.na(x)==TRUE)) 
+NA_count_of_each_col 
+```
+
+## Removing the rows with the total_bedrooms column as NA
+
+```{r}
+california_data_clean <- na.omit(california_data)
+```
+
+## Some statistics and plots found from the dataset
+
+## Finding the number of houses in each proximity
+
+```{r}
+require(ggplot2)
+require(dplyr)
+options(scipen=10000)
+houses_each_proximity <- california_data_clean %>% group_by(ocean_proximity) %>% summarise(number_of_houses = sum(households))
+houses_each_proximity
+format(houses_each_proximity, scientific = FALSE)
+
+ggplot(houses_each_proximity, aes(ocean_proximity, number_of_houses),fill = ocean_proximity)+   geom_bar(stat = "identity" , fill="steelblue")+   theme(legend.position = "none")+   labs(x = "ocean proximity", y = "Number of houses",        title = "Number of Houses in each proximity")+ coord_flip()
+```
+
+## Sumamry
+
+It is inferred from the above graph that there are more households (4,730,118 households) situated 1 hour away from ocean (<1H OCEAN) as compared to other areas. It is followed by households (3,127,759) that are situated inland (INLAND ) and there are least number of households in island.
+
+## Households by median_age
+```{r}
+age <- c(0,5,10,15,20,25,30,35,40,45,50,55)
+header <- c("0 to 5","5 to 10", "10 to 15", "15 to 20", "20 to 25","25 to 30",
+             "30 to 35","35 to 40","40 to 45","45 to 50", "50 to 55")
+partition_data <- transform(california_data_clean, age_cut = cut(housing_median_age, age, labels = header))
+
+barplot( height = rowsum(partition_data$households,partition_data$age_cut)[,1], las = 1, col = "steelblue", main = "Households by Median Age", ylab = "count of households", xlab = "Age of households"
+         , ylim = c(0,2000000))
+```
+
+## Summary
+
+The above grapoh looks like a normal distribution and most of the households are 15-35 years old.
+
+
+## Households by median age in all the proximities
+```{r}
+options(scipen=10000)
+island_houses <- data.frame(matrix(nrow=5,ncol = 2))
+colnames(island_houses) <- c("households","agecut")
+island_houses[,1]<-c(partition_data$households[partition_data$ocean_proximity=="ISLAND"])
+island_houses[,2]<-c(header[partition_data$age_cut[partition_data$ocean_proximity=="ISLAND"]])
+
+
+barplot( height = rowsum(island_houses$households,island_houses$agecut)[,1], las = 1, col = "#03B0F6", main = "Households by Median Age (ISLAND)", ylab = "Number of households"
+         , xlab = "Age of houses", ylim = c(0,800000))
+
+
+
+H1 <- data.frame(matrix(nrow=9034,ncol = 2))
+colnames(H1) <- c("households","agecut")
+H1[,1]<-c(partition_data$households[partition_data$ocean_proximity=="<1H OCEAN"])
+H1[,2]<-c(header[partition_data$age_cut[partition_data$ocean_proximity=="<1H OCEAN"]])
+
+
+barplot( height = rowsum(H1$households,H1$agecut)[,1], las = 1, col = "steelblue", main = "Households by Median Age (<1H OCEAN)", ylab = "Number of households"
+         , xlab = "Age of houses", ylim = c(0,800000))
+
+
+
+INLAND <- data.frame(matrix(nrow=6496,ncol = 2))
+colnames(INLAND) <- c("households","agecut")
+INLAND[,1]<-c(partition_data$households[partition_data$ocean_proximity=="INLAND"])
+INLAND[,2]<-c(header[partition_data$age_cut[partition_data$ocean_proximity=="INLAND"]])
+
+barplot( height = rowsum(INLAND$households,INLAND$agecut)[,1], las = 1, col = "steelblue", main = "Households by Median Age (INLAND)", ylab = "Number of households"
+         , xlab = "Age of houses", ylim = c(0,800000))
+
+ocean <- data.frame(matrix(nrow=2628,ncol = 2))
+colnames(ocean) <- c("households","agecut")
+ocean[,1]<-c(partition_data$households[partition_data$ocean_proximity=="NEAR OCEAN"])
+ocean[,2]<-c(header[partition_data$age_cut[partition_data$ocean_proximity=="NEAR OCEAN"]])
+
+barplot( height = rowsum(ocean$households,ocean$agecut)[,1], las = 1, col = "steelblue", main = "Households by Median Age (NEAR OCEAN)", ylab = "Number of households"
+         , xlab = "Age of houses", ylim = c(0,800000))
+
+bay <- data.frame(matrix(nrow=2270,ncol = 2))
+colnames(bay) <- c("households","agecut")
+bay[,1]<-c(partition_data$households[partition_data$ocean_proximity=="NEAR BAY"])
+bay[,2]<-c(header[partition_data$age_cut[partition_data$ocean_proximity=="NEAR BAY"]])
+
+
+
+barplot( height = rowsum(bay$households,bay$agecut)[,1], las = 1, col = "steelblue", main = "Households by Median Age (NEAR BAY)", ylab = "Number of households"
+         , xlab = "Age of houses", ylim = c(0,800000))
+```
+
+## Summary
+
+From the above graphs, it can be inferred that expect in the Near Bay location, most of the households are in the age group of 10-40 years. This means that the constructiog of new households may be common these areas.But in the Near bay area, most of the households are more than 50 years old. The median age of houses near bay and near near ocean is very less compared to inland and <1H ocean
+
+
+## Households by median income
+```{r}
+income_level <- c(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,Inf)
+header1 <- c("0-10k", "10k-20k", "20k-30k","30k-40k", "40k-50k", "50k-60k","60k-70k","70k-80k","80k-90k","90k-100k" 
+                    ,"100k-110k","110k-120k","120k-130k","130k-140k","140k-150k"," >150k")
+partition_data1 <- transform(california_data_clean, income_cut = cut(median_income, income_level, labels = header1))
+barplot( height = rowsum(partition_data1$households,partition_data1$income_cut)[,1], las = 1, col = "steelblue", main = "Households by Median income", ylab = "count of households", xlab = "Median income", ylim = c(0,3000000))
+```
+
+## Summary
+
+From the above graph, it can be inferred that the median income of most of the households is in the range of 20k to 50k and there are very few households with the median income of above 90k.
+
+
+```{r}
+bay_income <- data.frame(matrix(nrow=2270,ncol = 2))
+colnames(bay_income) <- c("households","incomecut")
+bay_income[,1]<-c(partition_data1$households[partition_data1$ocean_proximity=="NEAR BAY"])
+bay_income[,2]<-c(header1[partition_data1$income_cut[partition_data1$ocean_proximity=="NEAR BAY"]])
+
+barplot( height = rowsum(bay_income$households,bay_income$incomecut)[,1][header1], col = "steelblue", main = "Households by Median Income (NEAR BAY)", ylab = "Number of households", xlab = "Age", ylim = c(0,1400000))
+
+h1_income <- data.frame(matrix(nrow=9034,ncol = 2))
+colnames(h1_income) <- c("households","incomecut")
+h1_income[,1]<-c(partition_data1$households[partition_data1$ocean_proximity=="<1H OCEAN"])
+h1_income[,2]<-c(header1[partition_data1$income_cut[partition_data1$ocean_proximity=="<1H OCEAN"]])
+
+barplot( height = rowsum(h1_income$households,h1_income$incomecut)[,1][header1], col = "steelblue", main = "Households by Median Income (<1H OCEAN)", ylab = "Number of households", xlab = "Age", ylim = c(0,1400000))
+
+ocean_income <- data.frame(matrix(nrow=2628,ncol = 2))
+colnames(ocean_income) <- c("households","incomecut")
+ocean_income[,1]<-c(partition_data1$households[partition_data1$ocean_proximity=="NEAR OCEAN"])
+ocean_income[,2]<-c(header1[partition_data1$income_cut[partition_data1$ocean_proximity=="NEAR OCEAN"]])
+
+barplot( height = rowsum(ocean_income$households,ocean_income$incomecut)[,1][header1], col = "steelblue", main = "Households by Median Income (NEAR OCEAN)", ylab = "Number of households", xlab = "Age", ylim = c(0,1400000))
+
+inland_income <- data.frame(matrix(nrow=6496,ncol = 2))
+colnames(inland_income) <- c("households","incomecut")
+inland_income[,1]<-c(partition_data1$households[partition_data1$ocean_proximity=="INLAND"])
+inland_income[,2]<-c(header1[partition_data1$income_cut[partition_data1$ocean_proximity=="INLAND"]])
+
+barplot( height = rowsum(inland_income$households,inland_income$incomecut)[,1][header1], col = "steelblue", main = "Households by Median Income (INLAND)", ylab = "Number of households", xlab = "Age", ylim = c(0,1400000))
+
+
+island_income <- data.frame(matrix(nrow=5,ncol = 2))
+colnames(island_income) <- c("households","incomecut")
+island_income[,1]<-c(partition_data1$households[partition_data1$ocean_proximity=="ISLAND"])
+island_income[,2]<-c(header1[partition_data1$income_cut[partition_data1$ocean_proximity=="ISLAND"]])
+
+barplot( height = rowsum(island_income$households,island_income$incomecut)[,1][header1], col = "steelblue", main = "Households by Median Income (ISLAND)", ylab = "Number of households", xlab = "Age", ylim = c(0,1400000))
+
+
+```
+
+## Summary
+All of them follow similar trend. They have an median income of in  the range of $30K - $40K except in inland. IN inland, the median income of households are in the 20k - 30k range, which is quiet obvious as it is away from the ocean and expense of living is less and hence income is less.Also, if considering the previous graphs regarding the number of households for median age, it is similar to the median income, it may also indicate that since more people live in <1H ocean or inland and hence the house prices are high compared to near ocean and near bay.
+
+
+
+## Count of households in various price ranges in all the proximities
+```{r}
+value_cut <- c(price <- c(0,50000,100000,150000,200000,250000,300000,350000,400000,450000,500000,550000))
+header2 <- c("0-50k", "50k-100k", "100k-150k","150k-200k", "200k-250k", "250k-300k","300k-350k","350k-400k","400k-450k","450k-500k","500k-550k")
+partition_data2 <- transform(california_data_clean, cut_value = cut(median_house_value, value_cut, labels = header2))
+graph <- ggplot(data = california_data_clean) + geom_bar(map = aes(x = partition_data2$cut_value, fill = california_data_clean$ocean_proximity))
+graph + labs(x="Range of price",y="Number of households",title="Median price of households") + labs(colour = "ocean proximity")
+
+```
+
+## Summary
+
+From the above plot, it can be inferred that most of the households in inland are cheaper and there like very few or no households in the price range of 0-50k.
+
+## Population in each proximity
+
+```{r}
+options(scipen=10000)
+pop_each_proximity <- california_data_clean %>% group_by(ocean_proximity) %>% summarise(popu = sum(population))
+
+ggplot(pop_each_proximity, aes(ocean_proximity, popu))+   geom_bar(stat = "identity" , fill="steelblue")+   theme(legend.position = "none")+   labs(x = "ocean proximity", y = "population",        title = "population in each proximity")
+```
+
+## Sumamry
+
+From the above graph, it can be inferred that most of the people live in the areas situated 1 hour away from ocean (<1H OCEAN), followed by inlands and the least in the islands.
+
+## Correlation plot
+```{r}
+require(corrplot)
+california_data_clean$ocean_proximity <- as.numeric(california_data_clean$ocean_proximity)
+correlation  <- cor(california_data_clean)
+corrplot(correlation, method = "circle")
+```
+```{r}
+corMat <- as.data.frame(corrplot(correlation,method = "number"))
+```
+
+## Finding the corelation of median_house value with every other attribute
+```{r}
+print(paste(row.names(corMat), corMat$median_house_value))
+
+```
+
+## Observation:
+
+We see that median_income has higher corelation with the median_house_value. So while constructing our model to predict the median_house_value, we consider median_income as the first variable and then we will consider other variables in the decreasing order of their corelation with the median_house_value
+
+## Plotting median_income vs median_house_value
+```{r}
+options(scipen=10000)
+ggplot(aes(x=median_income,y=median_house_value),data=california_data_clean)+
+  geom_point()
+```
+
+## Constructing a linear regression model to predict household price
+
+
+```{r}
+attach(california_data_clean)
+fit1 <- lm(sqrt(california_data_clean$median_house_value) ~ median_income)
+summary(fit1)
+plot(x= (median_income),y=sqrt(median_house_value))
+abline(fit1)
+
+```
+
+```{r}
+fit2 <- lm(sqrt(median_house_value) ~  log(total_rooms))
+summary(fit2)
+plot(x= (log(total_rooms)),y=sqrt(median_house_value))
+abline(fit2)
+```
+```{r}
+fit3 <- lm(sqrt(median_house_value) ~  (latitude))
+summary(fit3)
+```
+
+
+```{r}
+plot(x= (latitude),y=sqrt(median_house_value))
+abline(fit3)
+```
+
+```{r}
+fit4 <- lm(sqrt(median_house_value) ~  log(housing_median_age))
+summary(fit4)
+plot(x= (log(housing_median_age)),y=sqrt(median_house_value))
+abline(fit4)
+```
+```{r}
+fit5 <- lm(sqrt(median_house_value) ~  ocean_proximity)
+summary(fit5)
+plot(x= ocean_proximity,y=sqrt(median_house_value))
+abline(fit5)
+```
+
+```{r}
+fit6 <- lm(sqrt(median_house_value) ~  log(households))
+summary(fit6)
+```
+
+```{r}
+plot(x=log(households),y=sqrt(median_house_value))
+abline(fit6)
+```
+
+```{r}
+fit7 <- lm(sqrt(median_house_value) ~  log(total_bedrooms))
+summary(fit7)
+```
+
+```{r}
+plot(x=log(total_bedrooms),y=sqrt(median_house_value))
+abline(fit7)
+```
+
+```{r}
+fit8 <- lm(sqrt(median_house_value) ~  (longitude)^2)
+summary(fit8)
+
+```
+
+```{r}
+plot(x=(longitude)^2,y=sqrt(median_house_value))
+abline(fit8)
+```
+Longitude doesn't have any linear relationship with the median_house_value. So we are not considering that in our model.
+
+```{r}
+fit9 <- lm(sqrt(median_house_value) ~  log(population))
+summary(fit9)
+```
+
+```{r}
+plot(x=log(population),y=sqrt(median_house_value))
+abline(fit9)
+```
+
+From the summary of the model, we can see that population variable has high p-value. So, it is not significant in predicting the price of the household. So, we are not including population in building our model.
+
+## Incrementally adding the attributes to our model to predict the price of the household
+Linear model when median_income is the only predictor variable.
+```{r}
+summary(fit1)
+```
+
+Adding the total_rooms attribute and comparing with the previous model.
+
+```{r}
+m1 <- lm(sqrt(median_house_value) ~  median_income + log(total_rooms))
+summary(m1)
+```
+
+We observe that the F-statistic value has increased and the p-value of the model is low. So, total_rooms is a good predictor.
+
+```{r}
+m2 <- lm(sqrt(median_house_value) ~  median_income + log(total_rooms) + log(latitude))
+summary(m2)
+```
+
+We observe that the F-statistic value has decreased but the standard error value has reduced. So, we are considering latitude.
+
+Similarly, we are adding other attributes and evaluating the model.
+
+```{r}
+m3 <- lm(sqrt(median_house_value) ~  median_income + log(total_rooms) + log(latitude) + housing_median_age)
+summary(m3)
+```
+
+So far, these parameters provided the best f-statistic value. Let's add the ocean_proximity.
+
+```{r}
+m4 <- lm(sqrt(median_house_value) ~  median_income + log(total_rooms) + log(latitude) + housing_median_age + ocean_proximity)
+summary(m4)
+```
+
+```{r}
+m5 <- lm(sqrt(median_house_value) ~  median_income + log(total_rooms) +  housing_median_age + ocean_proximity)
+summary(m5)
+```
+
+We observe that either adding or removing the latitude attribute is not affecting the model. So, we are ignoring the latitude attribute and try with log(latitude) parameter like in m3.
+
+```{r}
+m6 <- lm(sqrt(median_house_value) ~  median_income + log(total_rooms) +  housing_median_age + ocean_proximity + households)
+summary(m6)
+```
+
+```{r}
+m7 <- lm(sqrt(median_house_value) ~  median_income + log(total_rooms) +  housing_median_age + ocean_proximity + households + total_bedrooms)
+summary(m7)
+```
+
+```{r}
+m8 <- lm(sqrt(median_house_value) ~  median_income + log(total_rooms)+ housing_median_age + ocean_proximity + households + total_bedrooms)
+summary(m8)
+```
+
+We observe that removing the households attribute increases the F-statistic and R value is not changed. So, we are ignoring households attribute.
+
+```{r}
+m9 <- lm(sqrt(median_house_value) ~  median_income +   housing_median_age + ocean_proximity + log(total_rooms) + total_bedrooms + longitude)
+summary(m9)
+```
+
+After adding the longitude attribue, the F-statistic value is reducing and also the p-value is not significant. So, we are ignoring the longitude attribute and we also saw in the graphs that longitude doesn't have any linear relationship with the price of household attribute.
+
+```{r}
+m10 <- lm(sqrt(median_house_value) ~  median_income +   housing_median_age + ocean_proximity + log(total_rooms) + total_bedrooms + population)
+summary(m10)
+```
+
+Addition of population to the model, reduces the F-statistic by few numbers and the p-value of the model has increased on addition of population to model, so it is not a good predictor. 
+
+```{r}
+summary(m3)
+```
+
+Of all the linear models, the model m3 with median_income, log(total_rooms), log(latitude), housing_median_age has the highest F-statistic value and with a compartively less residual standard error(RSS). Though the model m5 has lesser RSS, it's F-statistic is less compared to m3. All other models except these have very low F-statistic and also the p-values are high. And also, some models like m8,m7m10 show some insignificant values as well. The latitude is found insignificant by itself, but the log(latitude) has added to a significant value.
+Therefore, sqrt(median_house_value) ~  median_income + log(total_rooms) + log(latitude) + housing_median_age  is the best model.
